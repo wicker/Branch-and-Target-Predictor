@@ -19,5 +19,5 @@
     // argument (taken) indicating whether or not the branch was taken.
     void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
         {
-
+			printf("%d %X\n", taken, actual_target_address);
         }
