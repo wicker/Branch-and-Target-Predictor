@@ -1,0 +1,13 @@
+What we want to get out of the traces using predictor.cc
+
+addr		32-bit PC location in hex (no zero prefix)
+next_addr	32-bit in hex (no zero prefix)
+indirect	0 = computed, 1 = PC-relative
+b_cond		0 = conditional, 1 = otherwise
+b_call		0 = call, 1 = otherwise
+b_return	0 = return, 1 = otherwise
+
+taken		0 = yes, 1 = no
+true_addr	32-bit in hex (no zero prefix)
+
+A0A0A0A0 A0A0A0A4 0 0 0 1 0 A0A0A0A0 

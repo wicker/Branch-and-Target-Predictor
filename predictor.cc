@@ -3,7 +3,7 @@
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
 
-  printf("Get prediction. ");
+  printf("%X %X %d %d %d %d ", addr, next_addr, indirect, b_cond, b_call, b_return);
 
   bool prediction = true;
   if (br->is_conditional)
