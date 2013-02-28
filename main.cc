@@ -11,8 +11,7 @@
 PREDICTOR predictor;
 
 // usage: predictor <trace>
-int
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     using namespace std;
 
