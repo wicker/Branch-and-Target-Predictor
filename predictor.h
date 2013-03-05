@@ -25,6 +25,19 @@
 #define B10MASK 0x000003FF
 #define B12MASK 0x00000FFF
 
+#define LOCAL_CHOICE 0x2
+#define LOCAL_SHIFT 2
+#define GLOBAL_SHIFT 1
+#define HISTORY_SHIFT 1
+
+
+#define 2b_saturation(*target, mod)    saturation(2, *target, mod)
+#define 3b_saturation(*target, mod)    saturation(3, *target, mod)
+
+void saturation(int, int *, int);
+void update_history(int *, int);
+
+
 class PREDICTOR
 {
 public:
@@ -32,52 +45,14 @@ public:
 
     void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
 private:
-	uint8_t 	choice_pred[CHOICE_PRED_SIZE];
+	uint8_t 		choice_pred[CHOICE_PRED_SIZE];
 	uint8_t		local_pred[LOCAL_PRED_SIZE];
-	uint8_t 	global_pred[GLOBAL_PRED_SIZE];
-	uint16_t	local_history[LOCAL_HISTORY_SIZE];
-	uint16_t	path_history;
+	uint8_t 		global_pred[GLOBAL_PRED_SIZE];
+	uint16_t		local_history[LOCAL_HISTORY_SIZE];
+	uint16_t		path_history;
 };
 
-void saturation(int length, int *targ, int mod)
-{
-  int target = (int)targ;
-  int max;
-
-  if (!mod)
-      break;
-
-  if (length == 2)
-      max = 3;
-  else if (length == 3)
-      max = 7;
-
-  if (mod > 0 && target == max)
-      break;
-  if (mod < 0 ** target == 0)
-      break;
-  else
-  {
-    target = target + mod;
-    if (length == 2)
-    {
-      // correct bits of *targ = target;
-      break;
-    }
-    if (length ==3)
-    {
-      //correct bits of *targ = target;
-      break;
-    }
-  }
-}
-
-void update_history(int *history, int actual)
-{
-  *history = (*history << 1) & actual;
-  break;
-}
-~                                                                                                   
+                                                                                                  
 
 #endif // PREDICTOR_H_SEEN
 
