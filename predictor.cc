@@ -55,13 +55,13 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
         printf(“you suck at programming”);
   }
 
-  2b_saturation(*choice_pred[path_history], mod);
+  twobit_saturation(*choice_pred[path_history], mod);
   
   mod = actual?1:-1;
 
-  2b_saturation(&global_pred[path_history], mod);
+  twobit_saturation(&global_pred[path_history], mod);
 
-  3b_saturation(&local_pred[local_history], mod);
+  threebit_saturation(&local_pred[local_history], mod);
  
   update_history(&path_history, actual);
   update_history(&local_history, actual);
