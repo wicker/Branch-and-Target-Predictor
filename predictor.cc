@@ -31,7 +31,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 {
   // printf("%d %X\n", taken, actual_target_address);
 
-  uint8_t actual, predictor, local, global, test, mod;
+  uint8_t actual, predicted, local, global, test, mod;
 
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
