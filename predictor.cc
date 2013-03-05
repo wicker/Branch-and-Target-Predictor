@@ -73,9 +73,9 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   threebit_saturation(&local_pred[mask_local_history()], mod);
  
   update_history(&path_history, actual);
-  path_history = path_history & B12MASK;
+  path_history = mask_path_history();
   update_history(&local_history[pc_index], actual);
-  local_history[pc_index] & B10MASK;
+  local_history[pc_index] = mask_local_history();
 
 } // end update_predictor()
 
