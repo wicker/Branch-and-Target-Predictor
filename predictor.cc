@@ -15,12 +15,15 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   // tournament predict between global and local from MSB of choice
   // predictor
-  if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
-     prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
-  else
-     prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
-
-  return prediction;
+  pc_index = br->instruction_adder & B10MASK;
+  prediction = TRUE;
+  if (br->is_conditional) {
+  	if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
+  	   prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
+  	else
+   	  prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
+  }
+  return (bool)prediction;
 }
 
 // Update the predictor after a prediction has been made.  This should accept
@@ -32,6 +35,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // printf("%d %X\n", taken, actual_target_address);
 
   uint8_t actual, predicted, local, global, test, mod;
+
+  if (br->is_call || br->is_return) return;
 
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
