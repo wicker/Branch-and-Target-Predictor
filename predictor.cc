@@ -15,7 +15,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   // tournament predict between global and local from MSB of choice
   // predictor
-  if (choice_pred[path_history] & LOCAL_CHOICE)
+  if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
      prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
   else
      prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
