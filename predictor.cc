@@ -65,9 +65,9 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   
   mod = actual?1:-1;
 
-  twobit_saturation(&global_pred[path_history], mod);
+  twobit_saturation(&global_pred[mask_path_history()], mod);
 
-  threebit_saturation(&local_pred[local_history], mod);
+  threebit_saturation(&local_pred[mask_local_history()], mod);
  
   update_history(&path_history, actual);
   update_history(&local_history, actual);
