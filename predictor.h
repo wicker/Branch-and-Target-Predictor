@@ -30,6 +30,9 @@
 #define GLOBAL_SHIFT 1
 #define HISTORY_SHIFT 1
 
+#define TAKEN 1
+#define NOT_TAKEN 0
+
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
 
