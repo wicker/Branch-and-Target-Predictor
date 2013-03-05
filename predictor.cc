@@ -86,33 +86,27 @@ void saturation(int length, int *targ, int mod)
 {
   int target = (int)targ;
   int max;
+  int mask;
 
   if (!mod)
       break;
 
-  if (length == 2)
-      max = 3;
-  else if (length == 3)
-      max = 7;
-
-  if (mod > 0 && target == max)
-      break;
-  if (mod < 0 ** target == 0)
-      break;
+  if (length == 2) 
+  {
+    max = 3;
+    mask = 32MASK;
+  }
   else
   {
-    target = target + mod;
-    if (length == 2)
-    {
-      // correct bits of *targ = target;
-      break;
-    }
-    if (length ==3)
-    {
-      //correct bits of *targ = target;
-      break;
-    }
+    max = 7;
+    mask = B3MASK;
   }
+  if ((mod > 0 && target == max) || (mod < 0 && !target))
+  {
+    mod = 0;
+  }
+  target = target + mod;
+  return ((uint8_t)(target & mask));
 }
 
 void update_history(int *history, int actual)
