@@ -7,20 +7,23 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 {
 
   //printf("%X %X %d %d %d %d ", br->instruction_addr, br->instruction_next_addr, br->is_indirect, br->is_conditional, br->is_call, br->is_return);
-
+#ifdef 0
   bool prediction = true;
   if (br->is_conditional)
     prediction = false;
   return prediction;   // true for taken, false for not taken
+#endif
 
   // these are the circumstances where we generate a prediction
 
-  // this is how we predict
-  if (choice_pred[path_history] & b'10')
-     prediction = local_pred[local_history] >> 2;
+  // tournament predict between global and local from MSB of choice
+  // predictor
+  if (choice_pred[path_history] & LOCAL_CHOICE)
+     prediction = local_pred[local_history] >> LOCAL_SHIFT;
   else
-     prediction = global_pred[path_history] >> 1;
+     prediction = global_pred[path_history] >> GLOBAL_SHIFT;
 
+  return prediction;
 }
 
 // Update the predictor after a prediction has been made.  This should accept
