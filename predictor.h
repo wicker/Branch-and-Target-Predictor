@@ -50,6 +50,8 @@ private:
 	uint8_t 		global_pred[GLOBAL_PRED_SIZE];
 	uint16_t		local_history[LOCAL_HISTORY_SIZE];
 	uint16_t		path_history;
+	uint16_t mask_path_history();
+	uint16_t mask_local_history();
 };
 
                                                                                                   

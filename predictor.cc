@@ -68,6 +68,14 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
 } // end update_predictor()
 
+uint16_t PREDICTOR::mask_path_history(){
+	return (path_history & B12MASK);
+}
+
+uint16_t PREDICTOR::mask_local_history(){
+	return (local_history & B10MASK);
+}
+
 void saturation(int length, int *targ, int mod)
 {
   int target = (int)targ;
