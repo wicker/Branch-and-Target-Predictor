@@ -36,20 +36,20 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   switch([actual, pred, local, global])
   {
-    case 0001: // increment
-    case 0101:
-    case 1010:
-    case 1110:
+    case 0x1: // increment
+    case 0x5:
+    case 0xA:
+    case 0xE:
         mod = 1;
-    case 0010:
-    case 0110:
-    case 1001:
-    case 1101:
+    case 0x2:
+    case 0x6:
+    case 0x9:
+    case 0xD:
         mod = -1;
-    case 0000:
-    case 0111:
-    case 1000:
-    case 1111:
+    case 0x0:
+    case 0x7:
+    case 0x8:
+    case 0xF:
         mod = 0;
     default:
         printf(“you suck at programming”);
@@ -63,8 +63,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   3b_saturation(&local_pred[local_history], mod);
  
-  history_update(&path_history, actual);
-  history_update(&local_history, actual);
+  update_history(&path_history, actual);
+  update_history(&local_history, actual);
 
 } // end update_predictor()
 
