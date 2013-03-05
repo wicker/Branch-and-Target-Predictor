@@ -61,7 +61,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
         printf("you suck at programming");
   }
 
-  twobit_saturation(*choice_pred[path_history], mod);
+  twobit_saturation(&choice_pred[path_history], mod);
   
   mod = actual?1:-1;
 
@@ -79,7 +79,7 @@ uint16_t PREDICTOR::mask_path_history(){
 }
 
 uint16_t PREDICTOR::mask_local_history(){
-	return (local_history & B10MASK);
+	return (local_history[pc_index] & B10MASK);
 }
 
 void saturation(int length, int *targ, int mod)
