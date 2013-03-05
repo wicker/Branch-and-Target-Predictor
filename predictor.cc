@@ -88,9 +88,6 @@ void saturation(int length, uint8_t *targ, int mod)
   int max;
   int mask;
 
-  if (!mod)
-      break;
-
   if (length == 2) 
   {
     max = 3;
