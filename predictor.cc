@@ -58,7 +58,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     case 0xF:
         mod = 0;
     default:
-        printf(“you suck at programming”);
+        printf("you suck at programming");
   }
 
   twobit_saturation(*choice_pred[path_history], mod);
