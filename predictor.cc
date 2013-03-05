@@ -17,12 +17,11 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   // this is how we predict
   if (choice_pred[path_history] & b'10')
-     prediction = local_prediction[local_history] >> 2;
+     prediction = local_pred[local_history] >> 2;
   else
      prediction = global_pred[path_history] >> 1;
 
 }
-
 
 // Update the predictor after a prediction has been made.  This should accept
 // the branch record (br) and architectural state (os), as well as a third
