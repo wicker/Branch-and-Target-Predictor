@@ -13,17 +13,17 @@
 #include "op_state.h"   // defines op_state_c (architectural state) class 
 #include "tread.h"      // defines branch_record_c class
 
-#define 4k 4096
-#define 1k 1024
-#define CHOICE_PRED_SIZE 4k
-#define GLOBAL_PRED_SIZE 4k
-#define LOCAL_PRED_SIZE 1k
-#define LOCAL_HISTORY_SIZE 1k
+#define FOURK 4096
+#define ONEK 1024
+#define CHOICE_PRED_SIZE FOURK
+#define GLOBAL_PRED_SIZE FOURK
+#define LOCAL_PRED_SIZE ONEK
+#define LOCAL_HISTORY_SIZE ONEK
 
-#define 2bMask 0x000003
-#define 3bMask 0x000007
-#define 10bMask 0x000003FF
-#define 12bMask 0x00000FFF
+#define B2MASK 0x000003
+#define B3MASK 0x000007
+#define B10MASK 0x000003FF
+#define B12MASK 0x00000FFF
 
 class PREDICTOR
 {
