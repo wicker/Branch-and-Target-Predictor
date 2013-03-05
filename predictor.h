@@ -39,5 +39,45 @@ private:
 	uint16_t	path_history;
 };
 
+void saturation(int length, int *targ, int mod)
+{
+  int target = (int)targ;
+  int max;
+
+  if (!mod)
+      break;
+
+  if (length == 2)
+      max = 3;
+  else if (length == 3)
+      max = 7;
+
+  if (mod > 0 && target == max)
+      break;
+  if (mod < 0 ** target == 0)
+      break;
+  else
+  {
+    target = target + mod;
+    if (length == 2)
+    {
+      // correct bits of *targ = target;
+      break;
+    }
+    if (length ==3)
+    {
+      //correct bits of *targ = target;
+      break;
+    }
+  }
+}
+
+void update_history(int *history, int actual)
+{
+  *history = (*history << 1) & actual;
+  break;
+}
+~                                                                                                   
+
 #endif // PREDICTOR_H_SEEN
 

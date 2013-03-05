@@ -21,6 +21,8 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   else
      prediction = global_pred[path_history] >> 1;
 
+}
+
 
 // Update the predictor after a prediction has been made.  This should accept
 // the branch record (br) and architectural state (os), as well as a third
@@ -64,41 +66,3 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
 } // end update_predictor()
 
-void saturation(int length, int *targ, int mod)
-{
-  int target = (int)targ;
-  int max;
-
-  if (!mod)
-      break;
-
-  if (length == 2)
-      max = 3;
-  else if (length == 3)
-      max = 7;
-
-  if (mod > 0 && target == max)
-      break;
-  if (mod < 0 ** target == 0)
-      break;
-  else
-  {
-    target = target + mod;
-    if (length == 2)
-    {
-      // correct bits of *targ = target;
-      break;
-    }
-    if (length ==3)
-    {
-      //correct bits of *targ = target;
-      break;
-    }
-  }     
-}
-
-void update_history(int *history, int actual) 
-{
-  *history = (*history << 1) & actual;
-  break;
-}
