@@ -34,7 +34,7 @@
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
 
 void saturation(int, uint8_t *, int);
-void update_history(int *, int);
+void update_history(uint16_t *, int);
 
 
 class PREDICTOR

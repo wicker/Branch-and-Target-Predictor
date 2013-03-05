@@ -73,7 +73,9 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   threebit_saturation(&local_pred[mask_local_history()], mod);
  
   update_history(&path_history, actual);
-  update_history(&local_history, actual);
+  path_history = path_history & B12MASK;
+  update_history(&local_history[pc_index], actual);
+  local_history[pc_index] & B10MASK;
 
 } // end update_predictor()
 
@@ -109,7 +111,7 @@ void saturation(int length, uint8_t *targ, int mod)
   *targ = ((uint8_t)(target & mask));
 }
 
-void update_history(int *history, int actual)
+void update_history(uint16_t *history, int actual)
 {
   *history = (*history << 1) & actual;
 }
