@@ -47,16 +47,19 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     case 0xA:
     case 0xE:
         mod = 1;
+        break;
     case 0x2:
     case 0x6:
     case 0x9:
     case 0xD:
         mod = -1;
+        break;
     case 0x0:
     case 0x7:
     case 0x8:
     case 0xF:
         mod = 0;
+        break;
     default:
         printf("you suck at programming");
   }
@@ -109,5 +112,4 @@ void saturation(int length, uint8_t *targ, int mod)
 void update_history(int *history, int actual)
 {
   *history = (*history << 1) & actual;
-  break;
 }
