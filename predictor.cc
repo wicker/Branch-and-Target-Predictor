@@ -4,7 +4,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 {
 
   //printf("%X %X %d %d %d %d ", br->instruction_addr, br->instruction_next_addr, br->is_indirect, br->is_conditional, br->is_call, br->is_return);
-#ifdef 0
+#if 0
   bool prediction = true;
   if (br->is_conditional)
     prediction = false;
