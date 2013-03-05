@@ -1,8 +1,5 @@
 #include "predictor.h"
 
-#define 2b_saturation(*target, mod)    saturation(2, *target, mod)
-#define 3b_saturation(*target, mod)    saturation(3, *target, mod)
-
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
 
