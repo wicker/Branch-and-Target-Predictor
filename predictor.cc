@@ -31,7 +31,16 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 {
   // printf("%d %X\n", taken, actual_target_address);
 
-  switch([actual, pred, local, global])
+  uint8_t actual, predictor, local, global;
+
+  actual = uint8_t(taken);
+  predicted = PREDICTOR::prediction;
+  local = local_pred[mask_local_history()] >> LOCAL_SHIFT;
+  global = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
+
+  test = (actual << 3) & (predicted << 2) & (local << 1) & global;
+
+  switch(test)
   {
     case 0x1: // increment
     case 0x5:
