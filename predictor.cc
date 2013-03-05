@@ -82,9 +82,9 @@ uint16_t PREDICTOR::mask_local_history(){
 	return (local_history[pc_index] & B10MASK);
 }
 
-void saturation(int length, int *targ, int mod)
+void saturation(int length, uint8_t *targ, int mod)
 {
-  int target = (int)targ;
+  int target = (int)*targ;
   int max;
   int mask;
 
@@ -94,7 +94,7 @@ void saturation(int length, int *targ, int mod)
   if (length == 2) 
   {
     max = 3;
-    mask = 32MASK;
+    mask = B2MASK;
   }
   else
   {
@@ -106,7 +106,7 @@ void saturation(int length, int *targ, int mod)
     mod = 0;
   }
   target = target + mod;
-  return ((uint8_t)(target & mask));
+  *targ = ((uint8_t)(target & mask));
 }
 
 void update_history(int *history, int actual)

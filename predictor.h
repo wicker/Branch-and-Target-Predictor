@@ -33,7 +33,7 @@
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
 
-void saturation(int, int *, int);
+void saturation(int, uint8_t *, int);
 void update_history(int *, int);
 
 
