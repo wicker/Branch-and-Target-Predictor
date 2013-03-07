@@ -1,4 +1,5 @@
 #include "predictor.h"
+#include <iostream>
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
@@ -15,18 +16,22 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   // tournament predict between global and local from MSB of choice
   // predictor
+//printf("-------------------------------------\n");
   pc_index = br->instruction_addr & B10MASK;
   prediction = TAKEN;
-  if (br->is_conditional) {
+  if (br->is_conditional) 
+  {
   	if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
+   {
   	   prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
-		printf("Local Prediction: %d\n",prediction);
+//		printf("Local Prediction: %d\n",prediction);
 	}
   	else
 	{
    	  prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
-		printf("Global Prediction: %d\n",prediction);
+//		printf("Global Prediction: %d\n",prediction);
 	}
+  }
   return (bool)prediction;
 }
 
@@ -41,7 +46,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   uint8_t actual, predicted, local, global, test;
 
   if (br->is_call || br->is_return) return;
-
+	if (!br->is_conditional) return;
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
@@ -72,6 +77,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     default:
         printf("you suck at programming: %X\n",test);
 			printf("actual: %X - prediction: %X - local: %X - global: %X\n",actual,prediction,local,global);
+		std::cin.get();
   }
 
   twobit_saturation(&choice_pred[path_history], mod);
@@ -86,7 +92,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   path_history = mask_path_history();
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
-	printf("Local History: %X \n Path History: %X\n",mask_local_history(),mask_path_history());
+//	printf("Local History: %X \n Path History: %X\n",mask_local_history(),mask_path_history());
 
 } // end update_predictor()
 
@@ -95,6 +101,7 @@ uint16_t PREDICTOR::mask_path_history(){
 }
 
 uint16_t PREDICTOR::mask_local_history(){
+//	printf("pc_index in mask: %X\n",pc_index);
 	return (local_history[pc_index] & B10MASK);
 }
 
@@ -118,7 +125,7 @@ void saturation(int length, uint8_t *targ, int mod)
   {
     mod = 0;
   }
-	printf("Target %d\nMod: %d\n",target,mod);
+	//printf("Target %d\nMod: %d\n",target,mod);
   target = target + mod;
   *targ = ((uint8_t)(target & mask));
 }
