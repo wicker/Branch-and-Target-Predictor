@@ -12,6 +12,8 @@
 #include <vector>
 #include "op_state.h"   // defines op_state_c (architectural state) class 
 #include "tread.h"      // defines branch_record_c class
+#include <iostream>		// used for debug
+
 
 #define FOURK 4096
 #define ONEK 1024
@@ -47,15 +49,17 @@ public:
 
     void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
 private:
-	uint8_t 		choice_pred[CHOICE_PRED_SIZE];
-	uint8_t		local_pred[LOCAL_PRED_SIZE];
-	uint8_t 		global_pred[GLOBAL_PRED_SIZE];
-	uint16_t		local_history[LOCAL_HISTORY_SIZE];
-	uint16_t		path_history;
-	uint8_t		prediction;
-	uint16_t 	pc_index;
-	uint16_t mask_path_history();
-	uint16_t mask_local_history();
+	uint8_t    choice_pred[CHOICE_PRED_SIZE];
+	uint8_t    local_pred[LOCAL_PRED_SIZE];
+	uint8_t    global_pred[GLOBAL_PRED_SIZE];
+	uint16_t   local_history[LOCAL_HISTORY_SIZE];
+	uint16_t   path_history;
+	uint8_t    prediction;
+	uint16_t   pc_index;
+
+   // utility functions
+	uint16_t   mask_path_history();
+	uint16_t   mask_local_history();
 	
 };
 
