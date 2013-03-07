@@ -19,7 +19,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 //printf("-------------------------------------\n");
   pc_index = br->instruction_addr & B10MASK;
   prediction = TAKEN;
-  if (br->is_conditional) 
+  if (1)//br->is_conditional) 
   {
   	if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
    {
@@ -45,8 +45,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 	int mod;
   uint8_t actual, predicted, local, global, test;
 
-  if (br->is_call || br->is_return) return;
-	if (!br->is_conditional) return;
+//  if (br->is_call || br->is_return) return;
+//	if (!br->is_conditional) return;
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
