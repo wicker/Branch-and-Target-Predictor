@@ -14,6 +14,9 @@
 #include "tread.h"      // defines branch_record_c class
 #include <iostream>		// used for debug
 
+#define LOCAL_SALT_LO 0x5
+#define LOCAL_SALT_UP 0x5
+#define GLOBAL_SALT 0x0
 
 #define FOURK 4096
 #define ONEK 1024
@@ -45,6 +48,7 @@ void update_history(uint16_t *, int);
 class PREDICTOR
 {
 public:
+    PREDICTOR();
     bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
     void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);

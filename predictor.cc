@@ -96,6 +96,20 @@ uint16_t PREDICTOR::mask_local_history(){
 	return (local_history[pc_index] & B10MASK);
 }
 
+
+PREDICTOR::PREDICTOR() {
+	for (int i = ONEK/2; i < ONEK; i++) { 
+		local_pred[i] = LOCAL_SALT_UP;
+	}
+	for (int i = 0; i < ONEK/2; i++) {
+		local_pred[i] = LOCAL_SALT_LO;
+	}
+	for (int i = 0; i < FOURK; i++) {
+		global_pred[i] = GLOBAL_SALT;
+	}
+}
+
+
 /*
 Update the global, local and choice saturation counters.
 Accessed through macros for 2 bit and 3 bit saturation.
