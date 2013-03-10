@@ -112,7 +112,7 @@ bool cbp_trace_reader_c::get_branch_record(branch_record_c *branch_record){
                     stat_num_correct_bpredicts++;
                 }
             }
-            if((predict_branch_target_copy == branch_target) || (is_branch_tkn)){ // correct target prediction
+            if(predict_branch_target_copy == branch_target) { // correct target prediction
             		stat_num_correct_tpredicts++;
             	}
         }

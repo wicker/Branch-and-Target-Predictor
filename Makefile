@@ -6,8 +6,6 @@ CXXFLAGS = -g -Wall
 
 objects = cbp_inst.o main.o op_state.o predictor.o tread.o
 
-test_objects = cbp_inst.o test_framework.o op_state.o predictor.o tread.o
-
 predictor : $(objects)
 	$(CXX) -o $@ $(objects)
 
@@ -21,5 +19,3 @@ tread.o : tread.h cbp_inst.h op_state.h
 clean :
 	rm -f predictor $(objects)
 
-TEST : $(test_objects) 
-	$(CXX) -o test_output $(test_objects)

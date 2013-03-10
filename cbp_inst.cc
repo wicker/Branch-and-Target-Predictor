@@ -1340,7 +1340,7 @@ namespace cbp
     bool
     cbp_inst_print_statistics(FILE* stream, const CBP_INST_STREAM* cbp_inst_stream)
     {
-        return (fprintf(stream, cbp_inst_stream->get_statistics_string().c_str()) >= 0);
+        return (fprintf(stream, "%s", cbp_inst_stream->get_statistics_string().c_str()) >= 0);
     }
 } // namespace cbp
     
