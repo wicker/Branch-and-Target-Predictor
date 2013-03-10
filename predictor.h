@@ -41,20 +41,9 @@
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
 
-
-typedef struct {
-	bool valid;
-	uint32_t tag;
-} line;
-
-typedef struct {
-	line way[ASSOC_SIZE];
-	uint8_t lru;
-} set;
-
-
 void saturation(int, uint8_t *, int);
 void update_history(uint16_t *, int);
+
 
 class PREDICTOR
 {
@@ -75,20 +64,10 @@ private:
    // utility functions
 	uint16_t   mask_path_history();
 	uint16_t   mask_local_history();
-
-	//Branch Target Predictor Data
-	target_cache[T_CACHE_SIZE];
-	uint32_t cr_cache[CR_CACHE_SIZE];
-	uint32_t * cr_head, cr_tail;
 	
-	// Branch Target Functions
-	void push_cr();
-	uint32_t pop_cr();
-	void insert_line(uint16_t, uint32_t);
-	uint32_t get_target(uint16_t);
-	uint8_t update_way(uint8_t, uint8_t);
 };
 
                                                                                                   
+
 #endif // PREDICTOR_H_SEEN
 
