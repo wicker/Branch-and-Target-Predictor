@@ -16,6 +16,7 @@
 
 #define LOCAL_SALT 0x5
 #define GLOBAL_SALT 0x0
+#define CHOICE_SALT 0x1
 
 #define FOURK 4096
 #define ONEK 1024
@@ -58,13 +59,12 @@ typedef struct {
 } set;
 
 
-void saturation(int, uint8_t *, int);
-void update_history(uint16_t *, int);
 
 class PREDICTOR
 {
 public:
     PREDICTOR();
+    ~PREDICTOR();
     bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
     void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
@@ -76,10 +76,13 @@ private:
 	uint16_t   path_history;
 	uint8_t    prediction;
 	uint16_t   pc_index;
+   double cache_access, cache_hit;
 
    // utility functions
 	uint16_t   mask_path_history();
 	uint16_t   mask_local_history();
+   void saturation(int, uint8_t *, int);
+   void update_history(uint16_t *, int);
 
 	//Branch Target Predictor Data
 	set target_cache[T_CACHE_SIZE];

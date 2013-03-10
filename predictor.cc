@@ -42,7 +42,7 @@ argument (taken) indicating whether or not the branch was taken.
 */
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
-	int mod;
+  int mod;
   uint8_t actual, predicted, local, global, test;
 
   actual = uint8_t(taken);
@@ -56,21 +56,22 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
+  // bit field: [actual, predicted, local, global]
   switch(test)
   {
-    case 0x1: // increment
+    case 0x1: // increment, train 'local'
     case 0x5:
     case 0xA:
     case 0xE:
         mod = 1;
         break;
-    case 0x2:
+    case 0x2: // decrement, train 'global'
     case 0x6:
     case 0x9:
     case 0xD:
         mod = -1;
         break;
-    case 0x0:
+    case 0x0: // no change
     case 0x7:
     case 0x8:
     case 0xF:
@@ -87,8 +88,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // Update saturation counters
   twobit_saturation(&choice_pred[path_history], mod);
   
+ // Train local and global with 'taken' | 'not taken'
   mod = actual?1:-1;
-
   twobit_saturation(&global_pred[mask_path_history()], mod);
   threebit_saturation(&local_pred[mask_local_history()], mod);
  
@@ -98,41 +99,175 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
 
-
 } 
 
 /*
-return masked value of path_history
+Class contrstructor
+Init predictors to *magic* init values as determined by salt_searcher test.
+init rotating indexes to head and tail of stack
 */
-uint16_t PREDICTOR::mask_path_history(){
-	return (path_history & B12MASK);
-}
-
-/*
-return masked value of local_history index by masked PC
-*/
-uint16_t PREDICTOR::mask_local_history(){
-	return (local_history[pc_index] & B10MASK);
-}
-
-
 PREDICTOR::PREDICTOR() {
-	for (int i = 0; i < ONEK; i++) { 
+	for (int i = 0; i < LOCAL_PRED_SIZE; i++) { 
 		local_pred[i] = LOCAL_SALT;
 	}
-	for (int i = 0; i < FOURK; i++) {
+	for (int i = 0; i < GLOBAL_PRED_SIZE; i++) {
 		global_pred[i] = GLOBAL_SALT;
+	}
+	for (int i = 0; i < CHOICE_PRED_SIZE; i++){
+		choice_pred[i] = CHOICE_SALT;
 	}
 	cr_head = 0;
 	cr_tail = CR_CACHE_SIZE - 1;	
 }
 
+PREDICTOR::~PREDICTOR() {
+	printf("Cache Miss Rate: %f",((cache_access - cache_hit) / cache_access));
+}
+
+/*
+Accept accessed way as input, update lru data in memory
+For a cache with ASSOC_SIZE associativity
+Model each LRU bit with a one byte bool 
+where each bit represent the value of (j < k)
+for the set of comparisons of way j and way k lru state machine values.
+If the way accessed is 'j', set the value to true
+If the way accessed is 'k', set the value to false
+
+The outer for loop for the i counter is not needed because the size of the lru array is dependent on ASSOC_SIZE, so out of bounds array access is limited by the inner loops break comparison. 
+*/
+void PREDICTOR::update_lru(int way){
+	int i = 0;
+	for (int j = 0; j < (ASSOC_SIZE - 1); j++) {
+		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
+			if (way == j) target_cache[pc_index].lru[i] = 1;
+			else if (way == k) target_cache[pc_index].lru[i] = 0;
+			i++;
+		}
+	}
+}
+
+/*
+Access the current indexed cache set
+Algorithim to decode the lru state machine output as a one hot
+Allocate an array the size of the cache associativty level.
+iterate through the lru state machine output checking the following:
+If j < k is false, k can not be victim, mark the one hot output array entry j as false.
+if j < k is true, j can not be the victim, mark the one hot output arrary k entry as false.
+After iterating through the entire lru output, only one entry in the one hot array will be true. 
+Return the index value of that entry.
+
+*/
+int PREDICTOR::get_victim() {
+	int i;
+	bool victim[ASSOC_SIZE];
+	for (int j = 0; i < (ASSOC_SIZE - 1); j++) {
+		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
+			if (target_cache[pc_index].lru[i]) 
+				victim[j] = false;
+			else 
+				victim[k] = false;
+			i++;
+		}
+	}
+	for (i = 0; i < (ASSOC_SIZE); i++) {
+		if (victim[i]) break;
+	}
+	return i; 
+}
+
+/*
+Accept tag and target address as input
+Search buffer target cache for tag as indexed by the lower 10 bits of the PC
+if tag found, insert target address as data
+else, evict a way and insert in evicted way
+*/
+void PREDICTOR::insert_target(uint16_t tag, uint32_t target){
+	
+	int way;
+	bool hit = false;
+	for (way = 0; way < ASSOC_SIZE; way++) {
+		if (target_cache[pc_index].lines[way].tag == tag) {
+			target_cache[pc_index].lines[way].data = target;
+			update_lru(way);
+			hit = true;
+		}
+	}
+	if (!hit) {
+		way = get_victim();
+		target_cache[pc_index].lines[way].valid = true;
+		target_cache[pc_index].lines[way].tag = tag;
+		target_cache[pc_index].lines[way].data = target;
+		update_lru(way);
+	}
+	cache_access++;
+}
+
+/*
+Search buffer target cache for PC tag bits
+If found, return data from way's data field
+else, return 0 as address (this creates an edge case)
+*/
+uint32_t PREDICTOR::get_target(uint16_t tag) {
+	uint32_t target = 0;
+	for (int way = 0; way < ASSOC_SIZE; way++) {
+		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
+			target = target_cache[pc_index].lines[way].data;
+			update_lru(way);
+			cache_hit++;
+			break;
+		}
+	}
+	return target;
+}
+
+/*
+rotating stack of buffer target addresses
+Insert at head
+Increment head and tail, rotate as needed
+*/
+void PREDICTOR::push_cr(uint32_t target) {
+	cr_cache[cr_head] = target;
+	if (cr_head == (CR_CACHE_SIZE - 1)) {
+		cr_head = 0;
+		cr_tail++;
+	}
+	else if (cr_tail == (CR_CACHE_SIZE - 1)) {
+		cr_head++;
+		cr_tail = 0;
+	}
+	else {
+		cr_head++;
+		cr_tail++;
+	}
+}
+
+/*
+rotating stack of buffer target addresses
+Return from tail
+decrement head and tail, rotate as needed
+*/
+uint32_t PREDICTOR::pop_cr() {
+	uint32_t target = cr_cache[cr_tail];
+	if (cr_head == 0) {
+		cr_head = CR_CACHE_SIZE - 1;
+		cr_tail--;
+	}
+	else if (cr_tail == 0) {
+		cr_head--;
+		cr_tail = CR_CACHE_SIZE - 1;
+	}
+	else {
+		cr_head--;
+		cr_tail--;
+	}
+	return target;
+}
 
 /*
 Update the global, local and choice saturation counters.
 Accessed through macros for 2 bit and 3 bit saturation.
 */
-void saturation(int length, uint8_t *targ, int mod)
+void PREDICTOR::saturation(int length, uint8_t *targ, int mod)
 {
   int target = (int)*targ;
   int max;
@@ -162,101 +297,21 @@ void saturation(int length, uint8_t *targ, int mod)
 update_history shifts the actual branch result into the LSB
 of a pointer to either local_history or path_history
 */
-void update_history(uint16_t *history, int actual){
+void PREDICTOR::update_history(uint16_t *history, int actual){
 
   *history = (*history << 1) + actual;
 }
 
-void PREDICTOR::update_lru(int way){
-	int i = 0;
-	for (int j = 0; j < (ASSOC_SIZE - 1); j++) {
-		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
-			if (way == j) target_cache[pc_index].lru[i] = 1;
-			else if (way == k) target_cache[pc_index].lru[i] = 0;
-			i++;
-		}
-	}
+/*
+return masked value of path_history
+*/
+uint16_t PREDICTOR::mask_path_history(){
+	return (path_history & B12MASK);
 }
 
-int PREDICTOR::get_victim() {
-	int i;
-	bool victim[ASSOC_SIZE];
-	for (int j = 0; i < (ASSOC_SIZE - 1); j++) {
-		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
-			if (target_cache[pc_index].lru[i]) 
-				victim[j] = false;
-			else 
-				victim[k] = false;
-			i++;
-		}
-	}
-	for (i = 0; i < (ASSOC_SIZE); i++) {
-		if (victim[i]) break;
-	}
-	return i; 
-}
-
-void PREDICTOR::insert_target(uint16_t tag, uint32_t target){
-	
-	int way;
-	bool hit = false;
-	for (way = 0; way < ASSOC_SIZE; way++) {
-		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
-			target_cache[pc_index].lines[way].data = target;
-			update_lru(way);
-			hit = true;
-		}
-	}
-	if (!hit) {
-		way = get_victim();
-		target_cache[pc_index].lines[way].valid = true;
-		target_cache[pc_index].lines[way].tag = tag;
-		target_cache[pc_index].lines[way].data = target;
-		update_lru(way);
-	}
-}
-
-uint32_t PREDICTOR::get_target(uint16_t tag) {
-	uint32_t target = 0;
-	for (int way = 0; way < ASSOC_SIZE; way++) {
-		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
-			target = target_cache[pc_index].lines[way].data;
-			update_lru(way);
-			break;
-		}
-	}
-	return target;
-}
-
-void PREDICTOR::push_cr(uint32_t target) {
-	cr_cache[cr_head] = target;
-	if (cr_head == (CR_CACHE_SIZE - 1)) {
-		cr_head = 0;
-		cr_tail++;
-	}
-	else if (cr_tail == (CR_CACHE_SIZE - 1)) {
-		cr_head++;
-		cr_tail = 0;
-	}
-	else {
-		cr_head++;
-		cr_tail++;
-	}
-}
-
-uint32_t PREDICTOR::pop_cr() {
-	uint32_t target = cr_cache[cr_tail];
-	if (cr_head == 0) {
-		cr_head = CR_CACHE_SIZE - 1;
-		cr_tail--;
-	}
-	else if (cr_tail == 0) {
-		cr_head--;
-		cr_tail = CR_CACHE_SIZE - 1;
-	}
-	else {
-		cr_head--;
-		cr_tail--;
-	}
-	return target;
+/*
+return masked value of local_history index by masked PC
+*/
+uint16_t PREDICTOR::mask_local_history(){
+	return (local_history[pc_index] & B10MASK);
 }
