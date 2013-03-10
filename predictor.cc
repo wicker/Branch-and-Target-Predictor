@@ -16,6 +16,18 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
 		 prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
   }
+  *predicted_target_address = get_target((br->instruction_addr & B10MASK) >> 10);
+  if (!*predicted_target_address || !prediction) {
+    *predicted_target_address = br->instruction_addr + 0x6;
+	}
+  if (br->is_call) {
+    push_cr(br->instruction_addr + 0x6);
+  }
+  if (br->is_return) {
+    *predicted_target_address = pop_cr();
+  }
+
+
   return (bool)prediction;
 }
 
@@ -35,6 +47,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
+
+  insert_target(((br->instruction_addr & B10MASK) >> 10), actual_target_address); 
 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
@@ -80,6 +94,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
 
+
 } 
 
 /*
@@ -98,15 +113,14 @@ uint16_t PREDICTOR::mask_local_history(){
 
 
 PREDICTOR::PREDICTOR() {
-	for (int i = ONEK/2; i < ONEK; i++) { 
-		local_pred[i] = LOCAL_SALT_UP;
-	}
-	for (int i = 0; i < ONEK/2; i++) {
-		local_pred[i] = LOCAL_SALT_LO;
+	for (int i = 0; i < ONEK; i++) { 
+		local_pred[i] = LOCAL_SALT;
 	}
 	for (int i = 0; i < FOURK; i++) {
 		global_pred[i] = GLOBAL_SALT;
 	}
+	cr_head = 0;
+	cr_tail = CR_CACHE_SIZE - 1;	
 }
 
 
@@ -144,11 +158,101 @@ void saturation(int length, uint8_t *targ, int mod)
 update_history shifts the actual branch result into the LSB
 of a pointer to either local_history or path_history
 */
-void update_history(uint16_t *history, int actual)
-{
+void update_history(uint16_t *history, int actual){
+
   *history = (*history << 1) + actual;
+}
 
+void PREDICTOR::update_lru(int way){
+	int i = 0;
+	for (int j = 0; j < (ASSOC_SIZE - 1); j++) {
+		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
+			if (way == j) target_cache[pc_index].lru[i] = 1;
+			else if (way == k) target_cache[pc_index].lru[i] = 0;
+			i++;
+		}
+	}
+}
 
-void PREDICTOR::update_lru(uint8_t way){
+int PREDICTOR::get_victim() {
+	int i;
+	bool victim[ASSOC_SIZE];
+	for (int j = 0; i < (ASSOC_SIZE - 1); j++) {
+		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
+			if (target_cache[pc_index].lru[i]) 
+				victim[j] = false;
+			else 
+				victim[k] = false;
+			i++;
+		}
+	}
+	for (i = 0; i < (ASSOC_SIZE); i++) {
+		if (victim[i]) break;
+	}
+	return i; 
+}
+
+void PREDICTOR::insert_target(uint16_t tag, uint32_t target){
 	
+	int way;
+	bool hit = false;
+	for (way = 0; way < ASSOC_SIZE; way++) {
+		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
+			target_cache[pc_index].lines[way].data = target;
+			update_lru(way);
+			hit = true;
+		}
+	}
+	if (!hit) {
+		way = get_victim();
+		target_cache[pc_index].lines[way].valid = true;
+		target_cache[pc_index].lines[way].tag = tag;
+		target_cache[pc_index].lines[way].data = target;
+		update_lru(way);
+	}
+}
+
+uint32_t PREDICTOR::get_target(uint16_t tag) {
+	uint32_t target = 0;
+	for (int way = 0; way < ASSOC_SIZE; way++) {
+		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
+			target = target_cache[pc_index].lines[way].data;
+			update_lru(way);
+			break;
+		}
+	}
+	return target;
+}
+
+void PREDICTOR::push_cr(uint32_t target) {
+	cr_cache[cr_head] = target;
+	if (cr_head == (CR_CACHE_SIZE - 1)) {
+		cr_head = 0;
+		cr_tail++;
+	}
+	else if (cr_tail == (CR_CACHE_SIZE - 1)) {
+		cr_head++;
+		cr_tail = 0;
+	}
+	else {
+		cr_head++;
+		cr_tail++;
+	}
+}
+
+uint32_t PREDICTOR::pop_cr() {
+	uint32_t target = cr_cache[cr_tail];
+	if (cr_head == 0) {
+		cr_head = CR_CACHE_SIZE - 1;
+		cr_tail--;
+	}
+	else if (cr_tail == 0) {
+		cr_head--;
+		cr_tail = CR_CACHE_SIZE - 1;
+	}
+	else {
+		cr_head--;
+		cr_tail--;
+	}
+	return target;
 }

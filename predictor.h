@@ -14,8 +14,7 @@
 #include "tread.h"      // defines branch_record_c class
 #include <iostream>		// used for debug
 
-#define LOCAL_SALT_LO 0x5
-#define LOCAL_SALT_UP 0x5
+#define LOCAL_SALT 0x5
 #define GLOBAL_SALT 0x0
 
 #define FOURK 4096
@@ -39,6 +38,7 @@
 #define NOT_TAKEN 0
 
 #define ASSOC_SIZE 4
+#define LRU_BITS 6
 #define T_CACHE_SIZE ONEK
 #define CR_CACHE_SIZE 12
 
@@ -49,12 +49,12 @@
 typedef struct {
 	bool valid;
 	uint16_t tag;
-	uint32_t target;
+	uint32_t data;
 } line;
 
 typedef struct {
-	line way[ASSOC_SIZE];
-	uint8_t lru;
+	line lines[ASSOC_SIZE];
+	bool lru[LRU_BITS];
 } set;
 
 
@@ -82,17 +82,17 @@ private:
 	uint16_t   mask_local_history();
 
 	//Branch Target Predictor Data
-	target_cache[T_CACHE_SIZE];
+	set target_cache[T_CACHE_SIZE];
 	uint32_t cr_cache[CR_CACHE_SIZE];
-	uint32_t * cr_head, cr_tail;
+	uint32_t cr_head, cr_tail;
 	
 	// Branch Target Functions
-	void push_cr();
+	void push_cr(uint32_t);
 	uint32_t pop_cr();
 	void insert_target(uint16_t, uint32_t);
 	uint32_t get_target(uint16_t);
-	void update_lru(uint8_t, uint8_t);
-	uint8_t get_victim(uint8_t);
+	void update_lru(int);
+	int get_victim();
 };
 
                                                                                                   
