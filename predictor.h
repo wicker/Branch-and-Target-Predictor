@@ -38,8 +38,8 @@
 #define TAKEN 1
 #define NOT_TAKEN 0
 
-#define ASSOC_SIZE 4
-#define LRU_BITS 6
+#define ASSOC_SIZE 8
+#define LRU_BITS 28
 #define T_CACHE_SIZE ONEK
 #define CR_CACHE_SIZE 32
 
