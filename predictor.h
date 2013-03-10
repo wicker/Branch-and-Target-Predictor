@@ -38,6 +38,10 @@
 #define TAKEN 1
 #define NOT_TAKEN 0
 
+#define ASSOC_SIZE 4
+#define T_CACHE_SIZE ONEK
+#define CR_CACHE_SIZE 12
+
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
 
@@ -84,9 +88,10 @@ private:
 	// Branch Target Functions
 	void push_cr();
 	uint32_t pop_cr();
-	void insert_line(uint16_t, uint32_t);
+	void insert_target(uint16_t, uint32_t);
 	uint32_t get_target(uint16_t);
-	uint8_t update_way(uint8_t, uint8_t);
+	void update_lru(uint8_t, uint8_t);
+	uint8_t get_victim(uint8_t);
 };
 
                                                                                                   

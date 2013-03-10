@@ -148,3 +148,5 @@ void update_history(uint16_t *history, int actual)
 {
   *history = (*history << 1) + actual;
 }
+
+void update_lru
