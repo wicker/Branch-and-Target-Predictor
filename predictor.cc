@@ -6,7 +6,7 @@ Store PC as index in class data structures
 */
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  pc_index = br->instruction_addr & B10MASK;
+  pc_index = (br->instruction_addr >> 2) & B10MASK;
   prediction = TAKEN;
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
