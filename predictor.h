@@ -40,7 +40,7 @@
 #define ASSOC_SIZE 4
 #define LRU_BITS 6
 #define T_CACHE_SIZE ONEK
-#define CR_CACHE_SIZE 12
+#define CR_CACHE_SIZE 32
 
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)

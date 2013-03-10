@@ -16,17 +16,21 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
 		 prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
   }
-  *predicted_target_address = get_target((br->instruction_addr & B10MASK) >> 10);
-  if (!*predicted_target_address || !prediction) {
-    *predicted_target_address = br->instruction_addr + 0x6;
+  *predicted_target_address = get_target((br->instruction_addr & ~B10MASK) >> 10);
+  if (!*predicted_target_address) {
+		//printf("Miss ");
+    *predicted_target_address = br->instruction_next_addr;
 	}
   if (br->is_call) {
-    push_cr(br->instruction_addr + 0x6);
+		//printf("Call ");
+    push_cr(br->instruction_next_addr);
   }
   if (br->is_return) {
+		//printf("Return ");
     *predicted_target_address = pop_cr();
   }
-
+	
+	//printf("%X Predicted address: %X\n",br->instruction_addr,*predicted_target_address);
 
   return (bool)prediction;
 }
@@ -47,8 +51,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-
-  insert_target(((br->instruction_addr & B10MASK) >> 10), actual_target_address); 
+//printf("Actual target: %X\n",actual_target_address);
+  insert_target(((br->instruction_addr & ~B10MASK) >> 10), actual_target_address); 
 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
