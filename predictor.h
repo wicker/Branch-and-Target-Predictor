@@ -48,7 +48,8 @@
 
 typedef struct {
 	bool valid;
-	uint32_t tag;
+	uint16_t tag;
+	uint32_t target;
 } line;
 
 typedef struct {

@@ -147,6 +147,8 @@ of a pointer to either local_history or path_history
 void update_history(uint16_t *history, int actual)
 {
   *history = (*history << 1) + actual;
-}
 
-void update_lru
+
+void PREDICTOR::update_lru(uint8_t way){
+	
+}
