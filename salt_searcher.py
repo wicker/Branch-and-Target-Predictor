@@ -5,8 +5,9 @@ from decimal import *
 
 lset = ["0","1","2","3","4","5","6","7"]
 gset = ["0","1","2","3"]
+cset = ["0","1","2","3"]
 traces = ["INT", "FP", "MM", "SERV"]
-lcombo = permutations(lset,2)
+#lcombo = permutations(lset,2)
 os.system("echo > salt.log")
 
 def avg_tmp():
@@ -23,20 +24,21 @@ def avg_tmp():
 	return (total / count)
 
 
-for g,ll,lu in [(g,ll,lu) for g in gset for ll in lset for lu in lset]:
-	local_lo_cmd = "sed -i 's/LOCAL_SALT_LO 0x[0-7]*./LOCAL_SALT_LO 0x"+ll+"/g' predictor.h"
-	local_up_cmd = "sed -i 's/LOCAL_SALT_UP 0x[0-7]*./LOCAL_SALT_UP 0x"+lu+"/g' predictor.h"
-	global_cmd = "sed -i 's/GLOBAL_SALT 0x[0-7]*./GLOBAL_SALT 0x"+g+"/g' predictor.h"
-	os.system(local_lo_cmd)
-	os.system(local_up_cmd)
+for g,l,c in [(g,l,c) for g in gset for l in lset for c in cset]:
+	local_cmd = "sed -i 's/LOCAL_SALT 0x[0-7]*./LOCAL_SALT 0x"+l+"/g' predictor.h"
+	choice_cmd = "sed -i 's/CHOICE_SALT 0x[0-3]*./CHOICE_SALT 0x"+c+"/g' predictor.h"
+	global_cmd = "sed -i 's/GLOBAL_SALT 0x[0-3]*./GLOBAL_SALT 0x"+g+"/g' predictor.h"
+	os.system(local_cmd)
+	os.system(choice_cmd)
 	os.system(global_cmd)
 	os.system("make")
 	os.system("echo > tmp")
 	for t in traces:
-		print "Running "+t+" for " + g,ll,lu
-		pred_cmd = "./predictor traces/DIST-"+t+"-1 | grep cc_b | awk -F '=' '{ print $2 }' | sed 's/ *[^ ]* //' >> tmp"
+		print "Running "+t+" for " + g,l,c
+		#pred_cmd = "./predictor traces/DIST-"+t+"-1 | grep cc_b | awk -F '=' '{ print $2 }' | sed 's/ *[^ ]* //' >> tmp"
+		pred_cmd = "./predictor traces/DIST-"+t+"-1 | grep cc_b | awk -F '=' {'print $2'} | awk -F ' ' {'print $1'} | grep -v '^$' >> tmp"
 		os.system(pred_cmd)
 	fd = open("salt.log",'a')
-	log = "(%s,%s,%s) : %s\n" % (g,ll,lu,str(avg_tmp()))
+	log = "(%s,%s,%s) : %s\n" % (g,l,c,str(avg_tmp()))
 	fd.write(log)
 	fd.close()		

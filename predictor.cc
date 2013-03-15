@@ -10,12 +10,13 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   prediction = TAKEN;
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
-	  prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
+   prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
   }
   else
   {
-		 prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
+ 	 prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
   }
+
   *predicted_target_address = get_target((br->instruction_addr & ~B10MASK) >> 10);
   if (!*predicted_target_address) {
 		//printf("Miss ");
@@ -121,7 +122,7 @@ PREDICTOR::PREDICTOR() {
 }
 
 PREDICTOR::~PREDICTOR() {
-	printf("Cache Miss Rate: %f",((cache_access - cache_hit) / cache_access));
+	printf("Cache Miss Rate: %f\n",((cache_access - cache_hit) / cache_access) * 100);
 }
 
 /*
