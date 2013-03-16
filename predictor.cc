@@ -7,6 +7,7 @@ Store PC as index in class data structures
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
   pc_index = br->instruction_addr & B10MASK;
+  target_index = pc_index >> 2;
   prediction = TAKEN;
   if (br->is_conditional) {
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
@@ -17,12 +18,12 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
  	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
-  *predicted_target_address = get_target(br->instruction_addr >> 10);
+  *predicted_target_address = get_target((br->instruction_addr & TAG_MASK) >> TAG_SHIFT);
   }
 	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
-  if (br->is_indirect && !br->is_return && !br->is_call) {
-    pc_index = (br->instruction_addr ^ thr) & B10MASK;
-    *predicted_target_address = get_target(br->instruction_addr >> 10);
+  if (br->is_indirect && !br->is_return && !br->is_call && !br->is_conditional) {
+    target_index = ((br->instruction_addr ^ thr) & B10MASK) >> 2;
+    *predicted_target_address = get_target((br->instruction_addr & TAG_MASK) >> TAG_SHIFT);
   }
   
   if (br->is_call) {
@@ -36,7 +37,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   if (!*predicted_target_address) {
     *predicted_target_address = last_target;
   }
-printf("Address Info: %X :: %X", br->instruction_addr, *predicted_target_address);
+//printf("Address Info: %X :: %X", br->instruction_addr, *predicted_target_address);
   return (bool)prediction;
 }
 
@@ -52,8 +53,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
-  if (br->is_indirect) thr = ((thr << 4) | (actual_target_address & B3MASK)); 
-printf(":: %X\n",actual_target_address);	
+  if (br->is_indirect && !br->is_call && !br->is_return) thr = ((thr << 4) | (actual_target_address & B3MASK)); 
+//printf(":: %X\n",actual_target_address);	
   last_target = actual_target_address;
   //if ((br->is_call || br->is_return) || (!br->is_conditional && !br->is_call && !br->is_return)) { test = 0; } 
   // switch on state of branch result with prediction and saturation
@@ -62,7 +63,7 @@ printf(":: %X\n",actual_target_address);
   if (br->is_conditional) {
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
-  insert_target((br->instruction_addr >> 10), actual_target_address); 
+  insert_target(((br->instruction_addr & TAG_MASK)>> TAG_SHIFT), actual_target_address); 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
   switch(test)
   {
@@ -204,20 +205,20 @@ void PREDICTOR::insert_target(uint32_t tag, uint32_t target){
 	bool hit = false;
 
 	for (way = 0; way < ASSOC_SIZE; way++) {
-		if (target_cache[pc_index].lines[way].tag == tag && target_cache[pc_index].lines[way].valid) {
-			if (target_cache[pc_index].lines[way].data != target) twobit_saturation(&target_cache[pc_index].lines[way].miss_rate,1);
-			else twobit_saturation(&target_cache[pc_index].lines[way].miss_rate,-1);
-			if (target_cache[pc_index].lines[way].miss_rate > TM_THRESH) target_cache[pc_index].lines[way].valid = false;
-			update_lru(pc_index, way);
+		if (target_cache[target_index].lines[way].tag == tag && target_cache[target_index].lines[way].valid) {
+			if (target_cache[target_index].lines[way].data != target) twobit_saturation(&target_cache[target_index].lines[way].miss_rate,1);
+			else twobit_saturation(&target_cache[target_index].lines[way].miss_rate,-1);
+			if (target_cache[target_index].lines[way].miss_rate > TM_THRESH) target_cache[target_index].lines[way].data = target;
+			update_lru(target_index, way);
 			hit = true;
 		}
 	}
 	if (!hit) {
 		way = get_victim(pc_index);
-		target_cache[pc_index].lines[way].valid = true;
-		target_cache[pc_index].lines[way].tag = tag;
-		target_cache[pc_index].lines[way].data = target;
-		target_cache[pc_index].lines[way].miss_rate = 0;
+		target_cache[target_index].lines[way].valid = true;
+		target_cache[target_index].lines[way].tag = tag;
+		target_cache[target_index].lines[way].data = target;
+		target_cache[target_index].lines[way].miss_rate = 0;
 		update_lru(pc_index,way);
 	}
 	cache_access++;
@@ -231,9 +232,9 @@ else, return 0 as address (this creates an edge case)
 uint32_t PREDICTOR::get_target(uint32_t tag) {
 	uint32_t target = 0;
 	for (int way = 0; way < ASSOC_SIZE; way++) {
-		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
-			target = target_cache[pc_index].lines[way].data;
-			update_lru(pc_index, way);
+		if (target_cache[target_index].lines[way].valid && target_cache[target_index].lines[way].tag == tag) {
+			target = target_cache[target_index].lines[way].data;
+			update_lru(target_index, way);
 			cache_hit++;
 			break;
 		}

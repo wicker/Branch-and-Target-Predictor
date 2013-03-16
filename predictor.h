@@ -38,13 +38,15 @@
 #define TAKEN 1
 #define NOT_TAKEN 0
 
-#define ASSOC_SIZE 8
-#define LRU_BITS 28
+#define ASSOC_SIZE 4
+#define LRU_BITS 6
 #define T_CACHE_SIZE ONEK
 #define CR_CACHE_SIZE 32
 #define CIBIB_SIZE ONEK
 #define CIBIB_MASK B10MASK
-#define TM_THRESH 2
+#define TM_THRESH 1
+#define TAG_MASK 0x00ffff00
+#define TAG_SHIFT 8
 
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
@@ -101,7 +103,7 @@ private:
 	uint32_t cr_head, cr_tail;
    uint16_t thr;
 	uint32_t last_target;
-	
+	uint8_t target_index;	
 	// Branch Target Functions
 	void push_cr(uint32_t);
 	uint32_t pop_cr();
