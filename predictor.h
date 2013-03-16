@@ -42,6 +42,9 @@
 #define LRU_BITS 28
 #define T_CACHE_SIZE ONEK
 #define CR_CACHE_SIZE 32
+#define CIBIB_SIZE ONEK
+#define CIBIB_MASK B10MASK
+#define TM_THRESH 2
 
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
@@ -49,8 +52,9 @@
 
 typedef struct {
 	bool valid;
-	uint16_t tag;
+	uint32_t tag;
 	uint32_t data;
+   uint8_t miss_rate;
 } line;
 
 typedef struct {
@@ -58,7 +62,10 @@ typedef struct {
 	bool lru[LRU_BITS];
 } set;
 
-
+typedef struct {
+	bool valid;
+	uint32_t data;
+} cibib_line;
 
 class PREDICTOR
 {
@@ -76,6 +83,8 @@ private:
 	uint16_t   path_history;
 	uint8_t    prediction;
 	uint16_t   pc_index;
+
+   // Debug data
    double cache_access, cache_hit;
 	int cr_depth, orphan_return;
 
@@ -87,16 +96,19 @@ private:
 
 	//Branch Target Predictor Data
 	set target_cache[T_CACHE_SIZE];
+	cibib_line cibib[CIBIB_SIZE];
 	uint32_t cr_cache[CR_CACHE_SIZE];
 	uint32_t cr_head, cr_tail;
+   uint16_t thr;
+	uint32_t last_target;
 	
 	// Branch Target Functions
 	void push_cr(uint32_t);
 	uint32_t pop_cr();
-	void insert_target(uint16_t, uint32_t);
-	uint32_t get_target(uint16_t);
-	void update_lru(int);
-	int get_victim();
+	void insert_target(uint32_t, uint32_t);
+	uint32_t get_target(uint32_t);
+	void update_lru(uint16_t, int);
+	int get_victim(uint16_t);
 };
 
                                                                                                   

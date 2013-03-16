@@ -8,6 +8,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 {
   pc_index = br->instruction_addr & B10MASK;
   prediction = TAKEN;
+  if (br->is_conditional) {
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
    prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
@@ -16,40 +17,26 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
  	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
-
-  *predicted_target_address = 0;
-  if (br->is_return) {
-		//printf("Return ");
-    prediction = TAKEN;
-    *predicted_target_address = pop_cr();
-	 
-	if (*predicted_target_address == 0) {
-		orphan_return++;
-      push_cr(0);
-	 }
+  *predicted_target_address = get_target(br->instruction_addr >> 10);
   }
-  if (*predicted_target_address == 0) {
-    *predicted_target_address = get_target((br->instruction_addr & ~B10MASK) >> 10);
+	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
+  if (br->is_indirect && !br->is_return && !br->is_call) {
+    pc_index = (br->instruction_addr ^ thr) & B10MASK;
+    *predicted_target_address = get_target(br->instruction_addr >> 10);
   }
-  //if (!*predicted_target_address) {
-		//printf("Miss ");
-  //  *predicted_target_address = br->instruction_next_addr;
-  //}
+  
   if (br->is_call) {
-		//printf("Call ");
     prediction = TAKEN;
     push_cr(br->instruction_next_addr);
-	 if (cr_depth < cr_head) {
-		cr_depth = cr_head;
-	 }
   }
-  if (!br->is_conditional && !br->is_call && !br->is_return) {
-   //printf("Branch type is unknown\n");
+  if (br->is_return) {
     prediction = TAKEN;
+    *predicted_target_address = pop_cr();
   }
-	
-	//printf("%X Predicted address: %X\n",br->instruction_addr,*predicted_target_address);
-
+  if (!*predicted_target_address) {
+    *predicted_target_address = last_target;
+  }
+printf("Address Info: %X :: %X", br->instruction_addr, *predicted_target_address);
   return (bool)prediction;
 }
 
@@ -65,17 +52,18 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
-  local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
-  global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
-
-  test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-//printf("Actual target: %X Next Address: %X\n",actual_target_address, br->instruction_next_addr);
-  insert_target(((br->instruction_addr & ~B10MASK) >> 10), actual_target_address); 
-
-  if ((br->is_call || br->is_return) || (!br->is_conditional && !br->is_call && !br->is_return)) { test = 0; } 
+  if (br->is_indirect) thr = ((thr << 4) | (actual_target_address & B3MASK)); 
+printf(":: %X\n",actual_target_address);	
+  last_target = actual_target_address;
+  //if ((br->is_call || br->is_return) || (!br->is_conditional && !br->is_call && !br->is_return)) { test = 0; } 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
+  if (br->is_conditional) {
+  local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
+  global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
+  insert_target((br->instruction_addr >> 10), actual_target_address); 
+  test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
   switch(test)
   {
     case 0x1: // increment, train 'local'
@@ -117,7 +105,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   path_history = mask_path_history();
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
-
+  }
 } 
 
 /*
@@ -157,12 +145,12 @@ If the way accessed is 'k', set the value to false
 
 The outer for loop for the i counter is not needed because the size of the lru array is dependent on ASSOC_SIZE, so out of bounds array access is limited by the inner loops break comparison. 
 */
-void PREDICTOR::update_lru(int way){
+void PREDICTOR::update_lru(uint16_t index, int way){
 	int i = 0;
 	for (int j = 0; j < (ASSOC_SIZE - 1); j++) {
 		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
-			if (way == j) target_cache[pc_index].lru[i] = 1;
-			else if (way == k) target_cache[pc_index].lru[i] = 0;
+			if (way == j) target_cache[index].lru[i] = 1;
+			else if (way == k) target_cache[index].lru[i] = 0;
 			i++;
 		}
 	}
@@ -179,12 +167,19 @@ After iterating through the entire lru output, only one entry in the one hot arr
 Return the index value of that entry.
 
 */
-int PREDICTOR::get_victim() {
-	int i;
+int PREDICTOR::get_victim(uint16_t index) {
+	int i = 0;
 	bool victim[ASSOC_SIZE];
-	for (int j = 0; i < (ASSOC_SIZE - 1); j++) {
+	
+	for(int l = 0; l < ASSOC_SIZE; l++) {
+		if (!target_cache[index].lines[l].valid) {
+			return l;
+		}
+	}
+
+	for (int j = 0; j < (ASSOC_SIZE - 1); j++) {
 		for (int k = (j + 1); k <= (ASSOC_SIZE - 1); k++) {
-			if (target_cache[pc_index].lru[i]) 
+			if (target_cache[index].lru[i]) 
 				victim[j] = false;
 			else 
 				victim[k] = false;
@@ -203,23 +198,27 @@ Search buffer target cache for tag as indexed by the lower 10 bits of the PC
 if tag found, insert target address as data
 else, evict a way and insert in evicted way
 */
-void PREDICTOR::insert_target(uint16_t tag, uint32_t target){
+void PREDICTOR::insert_target(uint32_t tag, uint32_t target){
 	
 	int way;
 	bool hit = false;
+
 	for (way = 0; way < ASSOC_SIZE; way++) {
-		if (target_cache[pc_index].lines[way].tag == tag) {
-			target_cache[pc_index].lines[way].data = target;
-			update_lru(way);
+		if (target_cache[pc_index].lines[way].tag == tag && target_cache[pc_index].lines[way].valid) {
+			if (target_cache[pc_index].lines[way].data != target) twobit_saturation(&target_cache[pc_index].lines[way].miss_rate,1);
+			else twobit_saturation(&target_cache[pc_index].lines[way].miss_rate,-1);
+			if (target_cache[pc_index].lines[way].miss_rate > TM_THRESH) target_cache[pc_index].lines[way].valid = false;
+			update_lru(pc_index, way);
 			hit = true;
 		}
 	}
 	if (!hit) {
-		way = get_victim();
+		way = get_victim(pc_index);
 		target_cache[pc_index].lines[way].valid = true;
 		target_cache[pc_index].lines[way].tag = tag;
 		target_cache[pc_index].lines[way].data = target;
-		update_lru(way);
+		target_cache[pc_index].lines[way].miss_rate = 0;
+		update_lru(pc_index,way);
 	}
 	cache_access++;
 }
@@ -229,12 +228,12 @@ Search buffer target cache for PC tag bits
 If found, return data from way's data field
 else, return 0 as address (this creates an edge case)
 */
-uint32_t PREDICTOR::get_target(uint16_t tag) {
+uint32_t PREDICTOR::get_target(uint32_t tag) {
 	uint32_t target = 0;
 	for (int way = 0; way < ASSOC_SIZE; way++) {
 		if (target_cache[pc_index].lines[way].valid && target_cache[pc_index].lines[way].tag == tag) {
 			target = target_cache[pc_index].lines[way].data;
-			update_lru(way);
+			update_lru(pc_index, way);
 			cache_hit++;
 			break;
 		}
