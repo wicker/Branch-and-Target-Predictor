@@ -77,6 +77,7 @@ private:
 	uint8_t    prediction;
 	uint16_t   pc_index;
    double cache_access, cache_hit;
+	int cr_depth, orphan_return;
 
    // utility functions
 	uint16_t   mask_path_history();

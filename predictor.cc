@@ -10,18 +10,23 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   prediction = TAKEN;
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
-   prediction = local_pred[mask_local_history()] >> LOCAL_SHIFT;
+   prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
   }
   else
   {
- 	 prediction = global_pred[mask_path_history()] >> GLOBAL_SHIFT;
+ 	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
 
   *predicted_target_address = 0;
   if (br->is_return) {
 		//printf("Return ");
-   // prediction = TAKEN;
+    prediction = TAKEN;
     *predicted_target_address = pop_cr();
+	 
+	if (*predicted_target_address == 0) {
+		orphan_return++;
+      push_cr(0);
+	 }
   }
   if (*predicted_target_address == 0) {
     *predicted_target_address = get_target((br->instruction_addr & ~B10MASK) >> 10);
@@ -32,11 +37,15 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   //}
   if (br->is_call) {
 		//printf("Call ");
-    //prediction = TAKEN;
+    prediction = TAKEN;
     push_cr(br->instruction_next_addr);
+	 if (cr_depth < cr_head) {
+		cr_depth = cr_head;
+	 }
   }
-  if (!br->is_conditional || !br->is_call || !br->is_return) {
-//   printf("Branch type is unknown\n");
+  if (!br->is_conditional && !br->is_call && !br->is_return) {
+   //printf("Branch type is unknown\n");
+    prediction = TAKEN;
   }
 	
 	//printf("%X Predicted address: %X\n",br->instruction_addr,*predicted_target_address);
@@ -63,7 +72,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 //printf("Actual target: %X Next Address: %X\n",actual_target_address, br->instruction_next_addr);
   insert_target(((br->instruction_addr & ~B10MASK) >> 10), actual_target_address); 
 
-  //if (br->is_call || br->is_return) { test = 0; } 
+  if ((br->is_call || br->is_return) || (!br->is_conditional && !br->is_call && !br->is_return)) { test = 0; } 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
@@ -128,10 +137,13 @@ PREDICTOR::PREDICTOR() {
 	}
 	cr_head = 0;
 	cr_tail = CR_CACHE_SIZE - 1;	
+	cr_depth = 0;
+	orphan_return = 0;
 }
 
 PREDICTOR::~PREDICTOR() {
 	printf("Cache Miss Rate: %f\n",((cache_access - cache_hit) / cache_access) * 100);
+	printf("orphan count: %d\n cr_depth: %d\n ending cr head: %d",orphan_return,cr_depth, cr_head);
 }
 
 /*
