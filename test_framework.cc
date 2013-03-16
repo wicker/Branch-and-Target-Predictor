@@ -22,10 +22,11 @@ int main(int argc, char ** argv) {
 	string fName = "test_trace";
 
 	fd = fopen(fName.c_str(),"r");
+	printf("Reading test_trace\n");
 	while (!feof(fd)) {
 	  fscanf(fd, "%X %X %d %d %d %d %d %X", br.instruction_addr, br.instruction_next_addr, br.is_indirect, br.is_conditional, br.is_call, br.is_return, taken, true_addr);
 	}
-	
+	printf("trace read complete\n");
 	
 	return 0;
 }

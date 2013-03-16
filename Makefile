@@ -5,6 +5,7 @@ CFLAGS = -g -Wall
 CXXFLAGS = -g -Wall
 
 objects = cbp_inst.o main.o op_state.o predictor.o tread.o
+test_objects = cbp_inst.o op_state.o predictor.o tread.o test_framework.o
 
 predictor : $(objects)
 	$(CXX) -o $@ $(objects)
@@ -14,6 +15,10 @@ main.o : tread.h cbp_inst.h predictor.h op_state.h
 op_state.o : op_state.h
 predictor.o : predictor.h op_state.h tread.h cbp_inst.h
 tread.o : tread.h cbp_inst.h op_state.h
+test_framework.o : tread.h cbp_inst.h predictor.h op_state.h
+
+test : $(test_objects)
+	$(CXX) -o $@ $(test_objects)
 
 .PHONY : clean
 clean :
