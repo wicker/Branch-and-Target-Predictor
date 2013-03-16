@@ -40,13 +40,13 @@
 
 #define ASSOC_SIZE 4
 #define LRU_BITS 6
-#define T_CACHE_SIZE ONEK
+#define T_CACHE_SIZE 128
 #define CR_CACHE_SIZE 32
 #define CIBIB_SIZE ONEK
 #define CIBIB_MASK B10MASK
 #define TM_THRESH 1
-#define TAG_MASK 0x00ffff00
-#define TAG_SHIFT 8
+#define TAG_MASK 0x007fff80
+#define TAG_SHIFT 7
 
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
@@ -107,10 +107,10 @@ private:
 	// Branch Target Functions
 	void push_cr(uint32_t);
 	uint32_t pop_cr();
-	void insert_target(uint32_t, uint32_t);
-	uint32_t get_target(uint32_t);
-	void update_lru(uint16_t, int);
-	int get_victim(uint16_t);
+	void insert_target(uint16_t, uint32_t);
+	uint32_t get_target(uint16_t);
+	void update_lru(uint8_t, int);
+	int get_victim(uint8_t);
 };
 
                                                                                                   
