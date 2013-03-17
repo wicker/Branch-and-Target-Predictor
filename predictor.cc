@@ -7,10 +7,10 @@ Store PC as index in class data structures
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
   pc_index = br->instruction_addr & B10MASK;
-  target_index = pc_index >> 3;
-  prediction = NOT_TAKEN;
+  target_index = pc_index >> T_INDEX_SHIFT;
+  //prediction = NOT_TAKEN;
   *predicted_target_address = 0;
- // if (br->is_conditional || (br->is_indirect && !br->is_call && !br->is_return)) {
+if (br->is_conditional) {
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
    prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
@@ -19,24 +19,27 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
  	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
-  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
+ // *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
 	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
-//  } 
-  if (br->is_indirect || br->is_call) {
-    //prediction = TAKEN;
-	 target_index = ((br->instruction_addr ^ thr) & B10MASK) >> 3;
-    *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
-  }
- // }
-  
+} 
+else prediction = TAKEN;
   if (br->is_call) {
-    prediction = TAKEN;
+  //  prediction = TAKEN;
     push_cr(br->instruction_next_addr);
   }
+  if (br->is_indirect && !br->is_return) {
+    //prediction = TAKEN;
+	 target_index = ((br->instruction_addr ^ thr) & B10MASK) >> T_INDEX_SHIFT;
+  //  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
+  }
+ // }
+ 
   if (br->is_return) {
-    prediction = TAKEN;
+   // prediction = TAKEN;
     *predicted_target_address = pop_cr();
   }
+  else  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
+  
   if (!*predicted_target_address) {
     *predicted_target_address = last_target;
   }
@@ -54,24 +57,23 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   int mod;
   uint8_t actual, predicted, local, global, test;
 
-  actual = uint8_t(taken);
-  predicted = PREDICTOR::prediction;
 //printf(":: %X\n",actual_target_address);	
   last_target = actual_target_address;
-
+  insert_target((br->instruction_addr >> TAG_SHIFT), actual_target_address); 
+  if (br->is_indirect && !br->is_return) {
+	  thr = ((thr << 3) | (actual_target_address & B3MASK)); 
+	  //test = 0;
+  }
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
+  actual = uint8_t(taken);
+  predicted = prediction;
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
-  insert_target((br->instruction_addr >> TAG_SHIFT), actual_target_address); 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-  if ((br->is_call || br->is_return)) { test = 0; } 
-  if (br->is_indirect || br->is_call) {
-	  thr = ((thr << 4) | (actual_target_address & B3MASK)); 
-	  //test = 0;
-  }
-//  if (br->is_conditional ) {
+//  if ((br->is_call || br->is_return)) { test = 0; } 
+if (br->is_conditional) {
   switch(test)
   {
     case 0x1: // increment, train 'local'
@@ -113,7 +115,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   path_history = mask_path_history();
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
- // }
+}
 } 
 
 /*
@@ -139,7 +141,7 @@ PREDICTOR::PREDICTOR() {
 
 PREDICTOR::~PREDICTOR() {
 	printf("Cache Miss Rate: %f\n",((cache_access - cache_hit) / cache_access) * 100);
-	printf("orphan count: %d\n cr_depth: %d\n ending cr head: %d\n",orphan_return,cr_depth, cr_head);
+//	printf("orphan count: %d\n cr_depth: %d\n ending cr head: %d\n",orphan_return,cr_depth, cr_head);
 }
 
 /*

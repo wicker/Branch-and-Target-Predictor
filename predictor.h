@@ -44,6 +44,9 @@
 #define CR_CACHE_SIZE 32
 #define TM_THRESH 1
 #define TAG_SHIFT 7
+#define T_INDEX_SHIFT 3
+#define THR_SHIFT 3
+#define THR_MASK 0x7f
 
 #define CIBIB_SIZE ONEK
 #define CIBIB_MASK B10MASK
