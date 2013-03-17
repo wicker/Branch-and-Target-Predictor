@@ -10,7 +10,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   target_index = pc_index >> 3;
   prediction = TAKEN;
   *predicted_target_address = 0;
-  if (br->is_conditional) {
+  //if (br->is_conditional) {
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
    prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
@@ -20,7 +20,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
  	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
   *predicted_target_address = get_target((br->instruction_addr & TAG_MASK) >> TAG_SHIFT);
-  }
+  //}
 	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
  // if (br->is_indirect && !br->is_return && !br->is_call && !br->is_conditional) {
  //   target_index = ((br->instruction_addr ^ thr) & B10MASK) >> 2;
@@ -57,15 +57,15 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   if (br->is_indirect && !br->is_call && !br->is_return) thr = ((thr << 4) | (actual_target_address & B3MASK)); 
 //printf(":: %X\n",actual_target_address);	
   last_target = actual_target_address;
-  //if ((br->is_call || br->is_return) || (!br->is_conditional && !br->is_call && !br->is_return)) { test = 0; } 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
-  if (br->is_conditional) {
+  //if (br->is_conditional) {
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
   insert_target(((br->instruction_addr & TAG_MASK)>> TAG_SHIFT), actual_target_address); 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
+  if ((br->is_call || br->is_return) ) { test = 0; } 
   switch(test)
   {
     case 0x1: // increment, train 'local'
@@ -107,7 +107,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   path_history = mask_path_history();
   update_history(&local_history[pc_index], actual);
   local_history[pc_index] = mask_local_history();
-  }
+ // }
 } 
 
 /*
