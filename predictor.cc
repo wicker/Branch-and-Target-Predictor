@@ -8,9 +8,9 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 {
   pc_index = br->instruction_addr & B10MASK;
   target_index = pc_index >> 3;
-  prediction = TAKEN;
+  prediction = NOT_TAKEN;
   *predicted_target_address = 0;
-  //if (br->is_conditional) {
+ // if (br->is_conditional || (br->is_indirect && !br->is_call && !br->is_return)) {
   if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
   {
    prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
@@ -19,12 +19,14 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   {
  	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
   }
-  *predicted_target_address = get_target((br->instruction_addr & TAG_MASK) >> TAG_SHIFT);
-  //}
+  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
 	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
- // if (br->is_indirect && !br->is_return && !br->is_call && !br->is_conditional) {
- //   target_index = ((br->instruction_addr ^ thr) & B10MASK) >> 2;
- //   *predicted_target_address = get_target((br->instruction_addr & TAG_MASK) >> TAG_SHIFT);
+//  } 
+  if (br->is_indirect || br->is_call) {
+    //prediction = TAKEN;
+	 target_index = ((br->instruction_addr ^ thr) & B10MASK) >> 3;
+    *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
+  }
  // }
   
   if (br->is_call) {
@@ -54,18 +56,22 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   actual = uint8_t(taken);
   predicted = PREDICTOR::prediction;
-  if (br->is_indirect && !br->is_call && !br->is_return) thr = ((thr << 4) | (actual_target_address & B3MASK)); 
 //printf(":: %X\n",actual_target_address);	
   last_target = actual_target_address;
+
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
-  //if (br->is_conditional) {
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
-  insert_target(((br->instruction_addr & TAG_MASK)>> TAG_SHIFT), actual_target_address); 
+  insert_target((br->instruction_addr >> TAG_SHIFT), actual_target_address); 
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-  if ((br->is_call || br->is_return) ) { test = 0; } 
+  if ((br->is_call || br->is_return)) { test = 0; } 
+  if (br->is_indirect || br->is_call) {
+	  thr = ((thr << 4) | (actual_target_address & B3MASK)); 
+	  //test = 0;
+  }
+//  if (br->is_conditional ) {
   switch(test)
   {
     case 0x1: // increment, train 'local'
@@ -200,7 +206,7 @@ Search buffer target cache for tag as indexed by the lower 10 bits of the PC
 if tag found, insert target address as data
 else, evict a way and insert in evicted way
 */
-void PREDICTOR::insert_target(uint16_t tag, uint32_t target){
+void PREDICTOR::insert_target(uint32_t tag, uint32_t target){
 	
 	int way;
 	bool hit = false;
@@ -230,7 +236,7 @@ Search buffer target cache for PC tag bits
 If found, return data from way's data field
 else, return 0 as address (this creates an edge case)
 */
-uint32_t PREDICTOR::get_target(uint16_t tag) {
+uint32_t PREDICTOR::get_target(uint32_t tag) {
 	uint32_t target = 0;
 	for (int way = 0; way < ASSOC_SIZE; way++) {
 		if (target_cache[target_index].lines[way].valid && target_cache[target_index].lines[way].tag == tag) {
