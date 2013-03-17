@@ -46,10 +46,7 @@
 #define TAG_SHIFT 7
 #define T_INDEX_SHIFT 3
 #define THR_SHIFT 3
-#define THR_MASK 0x7f
-
-#define CIBIB_SIZE ONEK
-#define CIBIB_MASK B10MASK
+#define THR_MASK B3MASK
 
 #define twobit_saturation(target, mod)    saturation(2, target, mod)
 #define threebit_saturation(target, mod)    saturation(3, target, mod)
@@ -101,12 +98,12 @@ private:
 
 	//Branch Target Predictor Data
 	set target_cache[T_CACHE_SIZE];
-	cibib_line cibib[CIBIB_SIZE];
 	uint32_t cr_cache[CR_CACHE_SIZE];
 	uint32_t cr_head, cr_tail;
    uint16_t thr;
 	uint32_t last_target;
 	uint8_t target_index;	
+	
 	// Branch Target Functions
 	void push_cr(uint32_t);
 	uint32_t pop_cr();

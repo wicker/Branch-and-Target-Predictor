@@ -8,34 +8,26 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 {
   pc_index = br->instruction_addr & B10MASK;
   target_index = pc_index >> T_INDEX_SHIFT;
-  //prediction = NOT_TAKEN;
   *predicted_target_address = 0;
-if (br->is_conditional) {
-  if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
-  {
-   prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
-  }
-  else
-  {
- 	 prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
-  }
- // *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
-	//printf("Address info: %X :: %X ", br->instruction_addr, *predicted_target_address);
-} 
-else prediction = TAKEN;
+  if (br->is_conditional) {
+    if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
+    {
+      prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
+    }
+    else
+    {
+ 	   prediction = (global_pred[mask_path_history()] & B2MASK) >> GLOBAL_SHIFT;
+    }
+  } 
+  else prediction = TAKEN;
   if (br->is_call) {
-  //  prediction = TAKEN;
     push_cr(br->instruction_next_addr);
   }
   if (br->is_indirect && !br->is_return) {
-    //prediction = TAKEN;
 	 target_index = ((br->instruction_addr ^ thr) & B10MASK) >> T_INDEX_SHIFT;
-  //  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
   }
- // }
  
   if (br->is_return) {
-   // prediction = TAKEN;
     *predicted_target_address = pop_cr();
   }
   else  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
@@ -43,7 +35,6 @@ else prediction = TAKEN;
   if (!*predicted_target_address) {
     *predicted_target_address = last_target;
   }
-//printf("Address Info: %X :: %X", br->instruction_addr, *predicted_target_address);
   return (bool)prediction;
 }
 
@@ -57,13 +48,15 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   int mod;
   uint8_t actual, predicted, local, global, test;
 
-//printf(":: %X\n",actual_target_address);	
+  // store actual target for catch all prediction
   last_target = actual_target_address;
+  
+  // insert actual target into BTB
   insert_target((br->instruction_addr >> TAG_SHIFT), actual_target_address); 
-  if (br->is_indirect && !br->is_return) {
-	  thr = ((thr << 3) | (actual_target_address & B3MASK)); 
-	  //test = 0;
-  }
+
+  // update thr with least significant 3 bits of actual target address
+  if (br->is_indirect && !br->is_return) thr = ((thr << 3) | (actual_target_address & THR_MASK)); 
+ 
   // switch on state of branch result with prediction and saturation
   // counters : state machine
   // bit field: [actual, predicted, local, global]
@@ -72,50 +65,49 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-//  if ((br->is_call || br->is_return)) { test = 0; } 
-if (br->is_conditional) {
-  switch(test)
-  {
-    case 0x1: // increment, train 'local'
-    case 0x5:
-    case 0xA:
-    case 0xE:
-        mod = 1;
-        break;
-    case 0x2: // decrement, train 'global'
-    case 0x6:
-    case 0x9:
-    case 0xD:
-        mod = -1;
-        break;
-    case 0x0: // no change
-    case 0x7:
-    case 0x8:
-    case 0xF:
-        mod = 0;
-        break;
-    default:
-        printf("you suck at programming: %X\n",test);
-        printf("actual: %X - prediction: %X - local: %X - global: %X\n",actual,prediction,local,global);
-        // Since reaching default is the result of an invalid 
-        // prediction state, we use cin.get to halt execution
-        std::cin.get();
-  }
+  if (br->is_conditional) {
+	  switch(test)
+	  {
+		 case 0x1: // increment, train 'local'
+		 case 0x5:
+		 case 0xA:
+		 case 0xE:
+			  mod = 1;
+			  break;
+		 case 0x2: // decrement, train 'global'
+		 case 0x6:
+		 case 0x9:
+		 case 0xD:
+			  mod = -1;
+			  break;
+		 case 0x0: // no change
+		 case 0x7:
+		 case 0x8:
+		 case 0xF:
+			  mod = 0;
+			  break;
+		 default:
+			  printf("you suck at programming: %X\n",test);
+			  printf("actual: %X - prediction: %X - local: %X - global: %X\n",actual,prediction,local,global);
+			  // Since reaching default is the result of an invalid 
+			  // prediction state, we use cin.get to halt execution
+			  std::cin.get();
+	  }
 
-  // Update saturation counters
-  twobit_saturation(&choice_pred[path_history], mod);
-  
- // Train local and global with 'taken' | 'not taken'
-  mod = actual?1:-1;
-  twobit_saturation(&global_pred[mask_path_history()], mod);
-  threebit_saturation(&local_pred[mask_local_history()], mod);
- 
-  // Update history 
-  update_history(&path_history, actual);
-  path_history = mask_path_history();
-  update_history(&local_history[pc_index], actual);
-  local_history[pc_index] = mask_local_history();
-}
+	  // Update saturation counters
+	  twobit_saturation(&choice_pred[path_history], mod);
+	  
+	 // Train local and global with 'taken' | 'not taken'
+	  mod = actual?1:-1;
+	  twobit_saturation(&global_pred[mask_path_history()], mod);
+	  threebit_saturation(&local_pred[mask_local_history()], mod);
+	 
+	  // Update history 
+	  update_history(&path_history, actual);
+	  path_history = mask_path_history();
+	  update_history(&local_history[pc_index], actual);
+	  local_history[pc_index] = mask_local_history();
+  }
 } 
 
 /*
@@ -140,8 +132,7 @@ PREDICTOR::PREDICTOR() {
 }
 
 PREDICTOR::~PREDICTOR() {
-	printf("Cache Miss Rate: %f\n",((cache_access - cache_hit) / cache_access) * 100);
-//	printf("orphan count: %d\n cr_depth: %d\n ending cr head: %d\n",orphan_return,cr_depth, cr_head);
+//	printf("Cache Miss Rate: %f\n",((cache_access - cache_hit) / cache_access) * 100);
 }
 
 /*
@@ -213,6 +204,7 @@ void PREDICTOR::insert_target(uint32_t tag, uint32_t target){
 	int way;
 	bool hit = false;
 
+	// search for existing entry, check if correct, increment miss count on misprediction. Replace after THRESHOLD is reached
 	for (way = 0; way < ASSOC_SIZE; way++) {
 		if (target_cache[target_index].lines[way].tag == tag && target_cache[target_index].lines[way].valid) {
 			if (target_cache[target_index].lines[way].data != target) twobit_saturation(&target_cache[target_index].lines[way].miss_rate,1);
@@ -222,6 +214,7 @@ void PREDICTOR::insert_target(uint32_t tag, uint32_t target){
 			hit = true;
 		}
 	}
+	// if no hit, evict a way and insert
 	if (!hit) {
 		way = get_victim(target_index);
 		target_cache[target_index].lines[way].valid = true;
