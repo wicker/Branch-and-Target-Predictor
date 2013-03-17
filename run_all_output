@@ -117,3 +117,65 @@ total predicts:                   3014850
 *********************************************************
 Cache Miss Rate: 24.013082
 MM-4
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *    63565 / 29499993 =   2.155
+1000*wrong_tpredicts/total insts: 1000 *    95483 / 29499993 =   3.237
+total branches:                   5084440
+total cc branches:                4874888
+total predicts:                   4874888
+*********************************************************
+Cache Miss Rate: 2.281825
+MM-5
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   190363 / 29499791 =   6.453
+1000*wrong_tpredicts/total insts: 1000 *   516277 / 29499791 =  17.501
+total branches:                   3406316
+total cc branches:                2563897
+total predicts:                   2563897
+*********************************************************
+Cache Miss Rate: 19.967290
+SERV-1
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   288111 / 29499316 =   9.767
+1000*wrong_tpredicts/total insts: 1000 *  1645582 / 29499316 =  55.784
+total branches:                   5607148
+total cc branches:                3660616
+total predicts:                   3660616
+*********************************************************
+Cache Miss Rate: 68.625815
+SERV-2
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   299054 / 29499198 =  10.138
+1000*wrong_tpredicts/total insts: 1000 *  1175706 / 29499198 =  39.856
+total branches:                   5443962
+total cc branches:                3537562
+total predicts:                   3537562
+*********************************************************
+Cache Miss Rate: 50.100644
+SERV-3
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   240093 / 29499817 =   8.139
+1000*wrong_tpredicts/total insts: 1000 *   711322 / 29499817 =  24.113
+total branches:                   5358488
+total cc branches:                3811906
+total predicts:                   3811906
+*********************************************************
+Cache Miss Rate: 20.799151
+SERV-4
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   322692 / 29498081 =  10.939
+1000*wrong_tpredicts/total insts: 1000 *  1199617 / 29498081 =  40.668
+total branches:                   6299843
+total cc branches:                4266796
+total predicts:                   4266796
+*********************************************************
+Cache Miss Rate: 41.749961
+SERV-5
+*********************************************************
+1000*wrong_cc_bpredicts/total insts: 1000 *   340244 / 29497759 =  11.535
+1000*wrong_tpredicts/total insts: 1000 *  1268825 / 29497759 =  43.014
+total branches:                   6411192
+total cc branches:                4291964
+total predicts:                   4291964
+*********************************************************
+Cache Miss Rate: 44.424843
