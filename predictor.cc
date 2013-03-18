@@ -9,7 +9,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   pc_index = br->instruction_addr & B10MASK;
   target_index = pc_index >> T_INDEX_SHIFT;
   *predicted_target_address = 0;
-  if (br->is_conditional) {
+  if (!br->is_indirect) {
     if (choice_pred[mask_path_history()] & LOCAL_CHOICE)
     {
       prediction = (local_pred[mask_local_history()] & B3MASK) >> LOCAL_SHIFT;
@@ -65,7 +65,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   local = (local_pred[mask_local_history()] >> LOCAL_SHIFT) & 0x1;
   global = (global_pred[mask_path_history()] >> GLOBAL_SHIFT) & 0x1;
   test = ((actual << 3) | (predicted << 2) | (local << 1) | global);
-  if (br->is_conditional) {
+  if (!br->is_indirect) {
 	  switch(test)
 	  {
 		 case 0x1: // increment, train 'local'
