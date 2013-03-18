@@ -1,0 +1,16 @@
+#pred_ctrl_choice
+	is_conditional, !is_return && !is_call, !is_indirect
+
+#call_ctrl_push
+	0, is_call
+
+#thr_ctrl_assign
+	0, is_indirect, is_indirect && !is_return, 
+
+#ret_ctrl_pop
+	0, is_return
+
+
+
+
+
