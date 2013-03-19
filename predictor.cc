@@ -33,7 +33,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   else  *predicted_target_address = get_target(br->instruction_addr >> TAG_SHIFT);
   
   if (!*predicted_target_address) {
-    *predicted_target_address = last_target;
+    //*predicted_target_address = last_target;
   }
   return (bool)prediction;
 }
